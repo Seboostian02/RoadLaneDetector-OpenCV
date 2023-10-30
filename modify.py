@@ -83,14 +83,19 @@ def find_and_draw_lane_edges(frame):
     # Pozitionare linii
     if len(left_pixels) > 0:
         left_line = np.polynomial.polynomial.polyfit(left_pixels[:, 1], left_pixels[:, 0], 1)
+
         left_top_y = 0
         left_bottom_y = frame.shape[0] # height
+
         left_top_x = int((0 - left_line[0]) / left_line[1])
         left_bottom_x = int((frame.shape[0] - left_line[0]) / left_line[1])
+
     if len(right_pixels) > 0:
         right_line = np.polynomial.polynomial.polyfit(right_pixels[:, 1], right_pixels[:, 0], 1)
+
         right_top_y = 0
         right_bottom_y = frame.shape[0]  # height
+
         right_top_x = int((0 - right_line[0]) / right_line[1])
         right_bottom_x = int((frame.shape[0] - right_line[0]) / right_line[1])
 
@@ -123,6 +128,7 @@ def find_and_draw_lane_edges(frame):
     right_bottom = right_bottom_y, right_bottom_x
 
     return frame, left_top, left_bottom, right_top, right_bottom
+
 
 SCALE_PERCENT = 25
 THRESHOLD_VALUE = 255/2 # 127
