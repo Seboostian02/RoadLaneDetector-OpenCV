@@ -169,7 +169,7 @@ while True:
 
     # ------------------ FINAL?
 
-    # Nu mai merge
+    # Nu mai merge sa afisez ca in main liniile pe 2 frame-uri diferite
 
     # final1 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
     # cv2.line(final1, left_top, left_bottom, (255, 0, 0), 3)
