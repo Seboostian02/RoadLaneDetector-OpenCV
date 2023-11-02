@@ -8,8 +8,8 @@ def limits(width_in, height_in):
     :param height_in:
     :return: arr of limits  [upper_right, upper_left, lower_left, lower_right]
     """
-    upper_left = (int(width_in * 0.45), int(height_in * 0.77))
-    upper_right = (int(width_in * 0.55), int(height_in * 0.77))
+    upper_left = (int(width_in * 0.40), int(height_in * 0.77))
+    upper_right = (int(width_in * 0.60), int(height_in * 0.77))
     lower_left = (int(width_in * 0), int(height_in * 1))
     lower_right = (int(width_in * 1), int(height_in * 1))
 
@@ -96,7 +96,7 @@ def make_lines(left_ys, left_xs, right_ys, right_xs):
     right_bottom_y = new_height
     right_bottom_x = int((right_bottom_y - right_line_coeffs[1]) / right_line_coeffs[0])
 
-    min_x = -10 ** 8
+    min_x = -10 ** 15
     max_x = 10 ** 8
 
     # logica eliminare valori in interval
@@ -119,7 +119,7 @@ def make_lines(left_ys, left_xs, right_ys, right_xs):
 
 
 SCALE_PERCENT = 25
-THRESHOLD_VALUE = 255/2 # 127
+THRESHOLD_VALUE = 190 # 127
 WHITE_COLOR = (255, 255, 255)
 
 cam = cv2.VideoCapture('Lane Detection Test Video-01.mp4')
@@ -129,6 +129,7 @@ while True:
 
     if ret is False:
         break
+
 
     new_width = int(frame.shape[1] * SCALE_PERCENT / 100)
     new_height = int(frame.shape[0] * SCALE_PERCENT / 100)
@@ -145,6 +146,7 @@ while True:
     cv2.fillConvexPoly(mask, trapez_bounds, WHITE_COLOR)
     # -------------------------------- aplicare masca
     masked_frame = cv2.bitwise_and(image_gray, image_gray, mask=mask)
+    # masked_frame = image_gray * mask * 255
     # --------------------------------- Stretch
     screen_bounds, stretched_frame = stretch(trapez_bounds, new_width, new_height)
     # --------------------------------- BLUR
@@ -173,14 +175,14 @@ while True:
     # ------------------ FINAL?
 
     final1 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    cv2.line(final1, left_top, left_bottom, (255, 0, 0), 3)
+    cv2.line(final1, left_top, left_bottom, (255, 50, 50), 10)
 
     trapez_bounds = np.float32(trapez_bounds)
     screen_bounds = np.float32(screen_bounds)
 
     matrix = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
     final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
-    cv2.imshow('final1', final_lines_left)
+    #cv2.imshow('final1', final_lines_left)
 
     left_ys1, left_xs1, right_ys1, right_xs1 = get_points_remove_noise(final_lines_left)
     left_line_coords = left_ys1, left_xs1, right_ys1, right_xs1
@@ -188,23 +190,35 @@ while True:
 
     final2 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
     #
-    cv2.line(final2, right_top, right_bottom, (50, 250, 50), 3)
+    cv2.line(final2, right_top, right_bottom, (50, 250, 50), 10)
     #
     matrix2 = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
     final_lines_right = cv2.warpPerspective(final2, matrix2, (new_width, new_height))
-    cv2.imshow('final2', final_lines_right)
+    #cv2.imshow('final2', final_lines_right)
     left_ys2, left_xs2, right_ys2, right_xs2 = get_points_remove_noise(final_lines_left)
     right_line_coords = left_ys2, left_xs2, right_ys2, right_xs2
 
-    result_frame = original.copy()
-    for coord in left_line_coords:
-          result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
-    for coord in right_line_coords:
-         result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
 
-    cv2.imshow("Lane Detection", result_frame)
+    result_frame = original.copy()
+    frame_linii_color = final_lines_left + final_lines_right
+
+    cv2.imshow('combinat', frame_linii_color)
+    result_frame = result_frame + frame_linii_color * 255
+    result_frame = cv2.resize(result_frame, (500, 250))
+
+
+    # cv2.bitwise_and(image_gray, image_gray, mask=mask)
+
+
+    # result_frame = original.copy()
+    # for coord in left_line_coords:
+    #       result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
+    # for coord in right_line_coords:
+    #      result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
+    #
+    # cv2.imshow("Lane Detection", result_frame)
     # Display the final frame with colored lane lines
-    #cv2.imshow("Lane Detection with Colored Lines", final_frame)
+    cv2.imshow("Lane Detection with Colored Lines", result_frame)
 
     # ----------------- FINAL
     #

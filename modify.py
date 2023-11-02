@@ -1,6 +1,32 @@
 import cv2
 import numpy as np
 
+class MovingAverageFilter:
+    def __init__(self, window_size):
+        self.window_size = window_size
+        self.buffer = []
+
+    def update(self, values):
+        self.buffer.append(values)
+        if len(self.buffer) > self.window_size:
+            self.buffer.pop(0)
+
+    def get_filtered_value(self):
+        if not self.buffer:
+            return None
+        # Reshape the values in the buffer to have a common dimension
+        reshaped_buffer = np.array(self.buffer)
+        reshaped_buffer = reshaped_buffer.reshape(-1, 2)  # Assuming x and y coordinates
+
+        # Compute the mean along the axis
+        mean_values = np.mean(reshaped_buffer, axis=0)
+
+        # Split the mean values into x and y coordinates
+        filtered_x, filtered_y = mean_values
+
+        return filtered_x, filtered_y
+
+#global new_width, new_height
 
 def limits(width_in, height_in):
     """
@@ -8,11 +34,10 @@ def limits(width_in, height_in):
     :param height_in:
     :return: arr of limits  [upper_right, upper_left, lower_left, lower_right]
     """
-    upper_left = (int(width_in * 0.45), int(height_in * 0.77))
-    upper_right = (int(width_in * 0.55), int(height_in * 0.77))
-    lower_left = (int(width_in * 0), int(height_in * 1))
-    lower_right = (int(width_in * 1), int(height_in * 1))
-
+    upper_left = (int(width_in * 0.40), int(height_in * 0.77))
+    upper_right = (int(width_in * 0.60), int(height_in * 0.77))
+    lower_left = (int(width_in * 0.1), int(height_in * 1))
+    lower_right = (int(width_in * 0.9), int(height_in * 1))
 
     arr_of_limits = [upper_right, upper_left, lower_left, lower_right]
 
@@ -35,7 +60,16 @@ def stretch(in_trapez_bounds, in_width, in_height):
     return out_screen_bounds, cv2.warpPerspective(masked_frame, perspective_matrix, (in_width, in_height))
 
 
-def sobel(in_stretched_frame):
+def remove_sobel_noise(in_sobel, in_width):
+    sobel_copy = in_sobel.copy()
+    black_band = int(in_width * 0.05)
+    sobel_copy[:, -black_band:] = 0
+    sobel_copy[:, :black_band] = 0
+
+    return sobel_copy
+
+
+def sobel(in_stretched_frame, in_width):
     # Matrici Sobel
     sobel_horizontal = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
     sobel_vertical = np.transpose(sobel_horizontal)
@@ -49,7 +83,10 @@ def sobel(in_stretched_frame):
 
     sobel_filter = np.sqrt(np.square(horizontal_edges) + np.square(vertical_edges))
 
-    return cv2.convertScaleAbs(sobel_filter)
+    final_sobel = cv2.convertScaleAbs(sobel_filter)
+    final_sobel = remove_sobel_noise(final_sobel, in_width)
+
+    return final_sobel
 
 
 def find_street_markings_coordinates(my_frame, percent_to_remove = 5):
@@ -70,6 +107,18 @@ def find_street_markings_coordinates(my_frame, percent_to_remove = 5):
     # extrage x si y
     left_ys, left_xs = left_indices[:, 0], left_indices[:, 1]
     right_ys, right_xs = right_indices[:, 0], right_indices[:, 1] + (width // 2)
+
+    # Define a moving average filter with a specific window size
+    # moving_average = MovingAverageFilter(5)  # Adjust the window size as needed
+    #
+    # # Filter the line coordinates
+    # moving_average.update([left_xs, left_ys])
+    # filtered_left_x, filtered_left_y = moving_average.get_filtered_value()
+    #
+    # moving_average.update([right_xs, right_ys])
+    # filtered_right_x, filtered_right_y = moving_average.get_filtered_value()
+    #
+    # return filtered_left_y, filtered_left_x, filtered_right_y, filtered_right_x
 
     return left_xs, left_ys, right_xs, right_ys
 
@@ -158,6 +207,7 @@ def find_and_draw_lane_edges(frame):
 
     return left_line_frame, right_line_frame
 
+
 def transform_and_draw_lines(original_frame, trapezoid_bounds):
     # Define the bounds for the perspective transform
     width = original_frame.shape[1]
@@ -165,10 +215,11 @@ def transform_and_draw_lines(original_frame, trapezoid_bounds):
     # frame_bounds = np.array([(0, 0), (width, 0), (width, height), (0, height)], dtype=np.float32)
     frame_bounds = np.array([(width, 0), (0, 0), (0, height), (width, height)], dtype=np.float32)
     perspective_matrix = cv2.getPerspectiveTransform(frame_bounds, trapezoid_bounds)
-
+    trapez_bounds = np.float32(trapezoid_bounds)
+    #screen_bounds = np.float32(screen_bounds)
     # Warp the original frame to the perspective of the trapezoid
 
-    top_down_frame = cv2.warpPerspective(original_frame, perspective_matrix, (width, height))
+    final_frame = cv2.warpPerspective(original_frame, perspective_matrix, (width, height))
 
     # Find street markings coordinates in the original frame
     left_ys, left_xs, right_ys, right_xs = find_street_markings_coordinates(original_frame)
@@ -182,20 +233,21 @@ def transform_and_draw_lines(original_frame, trapezoid_bounds):
         for i in range(len(left_ys) - 1):
             start = (left_xs[i], left_ys[i])
             end = (left_xs[i + 1], left_ys[i + 1])
-            cv2.line(top_down_frame, start, end, line_color, line_width)
+            cv2.line(final_frame, start, end, line_color, line_width)
 
     # Draw the right line on the top-down view
     if len(right_ys) >= 2:
         for i in range(len(right_ys) - 1):
             start = (right_xs[i], right_ys[i])
             end = (right_xs[i + 1], right_ys[i + 1])
-            cv2.line(top_down_frame, start, end, line_color, line_width)
+            cv2.line(final_frame, start, end, line_color, line_width)
 
-    return top_down_frame
+    return final_frame
+
 
 
 SCALE_PERCENT = 25
-THRESHOLD_VALUE = 255/2 # 127
+THRESHOLD_VALUE = 170 # 127
 WHITE_COLOR = (255, 255, 255)
 
 cam = cv2.VideoCapture('Lane Detection Test Video-01.mp4')
@@ -224,19 +276,31 @@ while True:
     # --------------------------------- Stretch
     screen_bounds, stretched_frame = stretch(trapez_bounds, new_width, new_height)
     # --------------------------------- BLUR
-    blurred_frame = cv2.blur(stretched_frame, ksize=(5, 5))
+    blurred_frame = cv2.blur(stretched_frame, ksize=(15, 15))
     # ----------------------------- SOBEL
-    sobel_filter_uint8 = sobel(stretched_frame)
+    sobel_filter_uint8 = sobel(stretched_frame, new_width)
     # ----------------------------- binary thing
     # AICI SCHIMBI FRAME-UL PE CARE FACI
     _, binary_frame = cv2.threshold(stretched_frame, THRESHOLD_VALUE, 255, cv2.THRESH_BINARY)
     # imaginea, valoarea, absolute white, tip de threshold
 
     # ----------------------------- coordonate si delete la noise
-    processed_frame = find_and_draw_lane_edges(binary_frame)
+    new_original = frame.copy()
+    processed_frame, left_top, left_bottom, right_top, right_bottom = find_and_draw_lane_edges(binary_frame)
+
+    final1 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
+    cv2.line(final1, left_top, left_bottom, (255, 50, 50), 10)
+
+    trapez_bounds = np.float32(trapez_bounds)
+    screen_bounds = np.float32(screen_bounds)
+
+    matrix = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
+    final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
+    cv2.imshow('final1', final_lines_left)
+
 
     # AICI DA EROARE
-    # final_frame = transform_and_draw_lines(frame, trapez_bounds)
+    #final_frame = transform_and_draw_lines(new_original, trapez_bounds)
 
     # Display the processed frame
 
