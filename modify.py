@@ -13,6 +13,7 @@ def limits(width_in, height_in):
     lower_left = (int(width_in * 0), int(height_in * 1))
     lower_right = (int(width_in * 1), int(height_in * 1))
 
+
     arr_of_limits = [upper_right, upper_left, lower_left, lower_right]
 
     return np.array(arr_of_limits, dtype=np.int32)
@@ -130,6 +131,69 @@ def find_and_draw_lane_edges(frame):
     return frame, left_top, left_bottom, right_top, right_bottom
 
 
+#def transform_and_draw_lines(original_frame, left_line_coords, right_line_coords, trapezoid_bounds):
+    # Create a blank frame with the same dimensions as the original frame
+    blank_frame = np.zeros_like(original_frame)
+
+    # Define the bounds for the perspective transform
+    frame_bounds = np.array([[0, 0], [original_frame.shape[1], 0], [original_frame.shape[1], original_frame.shape[0], [0, original_frame.shape[0]]]], dtype=np.float32)
+    perspective_matrix = cv2.getPerspectiveTransform(frame_bounds, trapezoid_bounds)
+
+    # Warp the blank frame to the perspective of the trapezoid
+    top_down_frame = cv2.warpPerspective(blank_frame, perspective_matrix, (original_frame.shape[1], original_frame.shape[0]))
+
+    # Create separate frames for left and right lines
+    left_line_frame = top_down_frame.copy()
+    right_line_frame = top_down_frame.copy()
+
+    # Draw the left line on the left_line_frame
+    for coord in left_line_coords:
+        x, y = coord
+        left_line_frame[y, x] = (255, 0, 0)  # Red color
+
+    # Draw the right line on the right_line_frame
+    for coord in right_line_coords:
+        x, y = coord
+        right_line_frame[y, x] = (0, 255, 0)  # Green color
+
+    return left_line_frame, right_line_frame
+
+def transform_and_draw_lines(original_frame, trapezoid_bounds):
+    # Define the bounds for the perspective transform
+    width = original_frame.shape[1]
+    height = original_frame.shape[0]
+    # frame_bounds = np.array([(0, 0), (width, 0), (width, height), (0, height)], dtype=np.float32)
+    frame_bounds = np.array([(width, 0), (0, 0), (0, height), (width, height)], dtype=np.float32)
+    perspective_matrix = cv2.getPerspectiveTransform(frame_bounds, trapezoid_bounds)
+
+    # Warp the original frame to the perspective of the trapezoid
+
+    top_down_frame = cv2.warpPerspective(original_frame, perspective_matrix, (width, height))
+
+    # Find street markings coordinates in the original frame
+    left_ys, left_xs, right_ys, right_xs = find_street_markings_coordinates(original_frame)
+
+    # Define line colors and widths
+    line_color = (255, 0, 0)  # Red color
+    line_width = 3
+
+    # Draw the left line on the top-down view
+    if len(left_ys) >= 2:
+        for i in range(len(left_ys) - 1):
+            start = (left_xs[i], left_ys[i])
+            end = (left_xs[i + 1], left_ys[i + 1])
+            cv2.line(top_down_frame, start, end, line_color, line_width)
+
+    # Draw the right line on the top-down view
+    if len(right_ys) >= 2:
+        for i in range(len(right_ys) - 1):
+            start = (right_xs[i], right_ys[i])
+            end = (right_xs[i + 1], right_ys[i + 1])
+            cv2.line(top_down_frame, start, end, line_color, line_width)
+
+    return top_down_frame
+
+
 SCALE_PERCENT = 25
 THRESHOLD_VALUE = 255/2 # 127
 WHITE_COLOR = (255, 255, 255)
@@ -169,7 +233,10 @@ while True:
     # imaginea, valoarea, absolute white, tip de threshold
 
     # ----------------------------- coordonate si delete la noise
-    processed_frame, left_top, left_bottom, right_top, right_bottom = find_and_draw_lane_edges(binary_frame)
+    processed_frame = find_and_draw_lane_edges(binary_frame)
+
+    # AICI DA EROARE
+    # final_frame = transform_and_draw_lines(frame, trapez_bounds)
 
     # Display the processed frame
 
