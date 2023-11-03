@@ -10,8 +10,8 @@ def limits(width_in, height_in):
     """
     upper_left = (int(width_in * 0.40), int(height_in * 0.77))
     upper_right = (int(width_in * 0.60), int(height_in * 0.77))
-    lower_left = (int(width_in * 0), int(height_in * 1))
-    lower_right = (int(width_in * 1), int(height_in * 1))
+    lower_left = (int(width_in * 0.1), int(height_in * 1))
+    lower_right = (int(width_in * 0.9), int(height_in * 1))
 
     arr_of_limits = [upper_right, upper_left, lower_left, lower_right]
 

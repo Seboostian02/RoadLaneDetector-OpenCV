@@ -70,7 +70,7 @@ def find_street_markings_coordinates(my_frame, percent_to_remove = 5):
     # procentaj de delete
     num_cols_to_black = int(percent_to_remove/100 * width)
 
-    # face coloanele negre stanga-dreatpta
+    # face coloanele negre stanga-dreapta
     frame_copy[:, :num_cols_to_black] = 0
     frame_copy[:, -num_cols_to_black:] = 0
 
