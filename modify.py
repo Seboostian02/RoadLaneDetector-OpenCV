@@ -1,32 +1,6 @@
 import cv2
 import numpy as np
 
-class MovingAverageFilter:
-    def __init__(self, window_size):
-        self.window_size = window_size
-        self.buffer = []
-
-    def update(self, values):
-        self.buffer.append(values)
-        if len(self.buffer) > self.window_size:
-            self.buffer.pop(0)
-
-    def get_filtered_value(self):
-        if not self.buffer:
-            return None
-        # Reshape the values in the buffer to have a common dimension
-        reshaped_buffer = np.array(self.buffer)
-        reshaped_buffer = reshaped_buffer.reshape(-1, 2)  # Assuming x and y coordinates
-
-        # Compute the mean along the axis
-        mean_values = np.mean(reshaped_buffer, axis=0)
-
-        # Split the mean values into x and y coordinates
-        filtered_x, filtered_y = mean_values
-
-        return filtered_x, filtered_y
-
-#global new_width, new_height
 
 def limits(width_in, height_in):
     """
@@ -107,18 +81,6 @@ def find_street_markings_coordinates(my_frame, percent_to_remove = 5):
     # extrage x si y
     left_ys, left_xs = left_indices[:, 0], left_indices[:, 1]
     right_ys, right_xs = right_indices[:, 0], right_indices[:, 1] + (width // 2)
-
-    # Define a moving average filter with a specific window size
-    # moving_average = MovingAverageFilter(5)  # Adjust the window size as needed
-    #
-    # # Filter the line coordinates
-    # moving_average.update([left_xs, left_ys])
-    # filtered_left_x, filtered_left_y = moving_average.get_filtered_value()
-    #
-    # moving_average.update([right_xs, right_ys])
-    # filtered_right_x, filtered_right_y = moving_average.get_filtered_value()
-    #
-    # return filtered_left_y, filtered_left_x, filtered_right_y, filtered_right_x
 
     return left_xs, left_ys, right_xs, right_ys
 
