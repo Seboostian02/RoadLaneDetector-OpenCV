@@ -296,9 +296,14 @@ while True:
 
     matrix = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
     final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
-    cv2.imshow('final1', final_lines_left)
+    cv2.imshow('linii stanga', final_lines_left)
 
+    final2 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
+    cv2.line(final2, right_top, right_bottom, (50, 255, 50), 10)
+    matrix2 = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
 
+    final_lines_right = cv2.warpPerspective(final2, matrix2, (new_width, new_height))
+    cv2.imshow('linii dreapta', final_lines_right)
     # AICI DA EROARE
     #final_frame = transform_and_draw_lines(new_original, trapez_bounds)
 

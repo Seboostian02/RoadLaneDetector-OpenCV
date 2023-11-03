@@ -49,32 +49,37 @@ def sobel(in_stretched_frame):
     return cv2.convertScaleAbs(sobel_filter)
 
 
-def find_street_markings_coordinates(my_frame, percent_to_remove = 5):
-    frame_copy = my_frame.copy()
-    height = int(frame_copy.shape[0])
-    width = int(frame_copy.shape[1])
+def get_points_remove_noise(in_binary_frame, percentage_to_remove = 5):
+    """
+    Optimizeaza frame-ul (sterge by default 5% stanga-dreapta)
+    :param in_binary_frame: binary frame
+    :return: puncte care urmeaza marcajele de pe strada
+    left_ys, left_xs, right_ys, right_xs
+    """
+    binary_frame_copy = in_binary_frame.copy()
 
-    # procentaj de delete
-    num_cols_to_black = int(percent_to_remove / 100 * width)
+    binary_frame_width = in_binary_frame.shape[1]
 
-    # face coloanele negre stanga-dreatpta
-    frame_copy[:, :num_cols_to_black] = 0
-    frame_copy[:, -num_cols_to_black:] = 0
+    columns_to_remove = int(binary_frame_width * (percentage_to_remove / 100))
 
-    # gaseste coordonatele pixelilor albi
-    left_indices = np.argwhere(frame_copy[:, :width // 2] > 0)
-    right_indices = np.argwhere(frame_copy[:, width // 2:] > 0)
+    binary_frame_copy[:, :columns_to_remove] = 0  # stergem primele coloane
+    binary_frame_copy[:, -columns_to_remove:] = 0  # stergem ultimele coloeane
 
-    # extrage x si y
-    left_ys, left_xs = left_indices[:, 0], left_indices[:, 1]
-    right_ys, right_xs = right_indices[:, 0], right_indices[:, 1] + (width // 2)
+    left_half = image_gray[:, : binary_frame_width // 2]
+    right_half = image_gray[:, binary_frame_width // 2:]
 
-    return left_xs, left_ys, right_xs, right_ys
+    white_pixels_left = np.argwhere(left_half > 100)
+    in_left_ys, in_left_xs = white_pixels_left[:, 0], white_pixels_left[:, 1]
+
+    white_pixels_right = np.argwhere(right_half > 100)
+    in_right_ys, in_right_xs = white_pixels_right[:, 0], white_pixels_right[:, 1]
+
+    return in_left_ys, in_left_xs, in_right_ys, in_right_xs
 
 
 def make_lines(in_frame):
 
-    left_ys, left_xs, right_ys, right_xs = find_street_markings_coordinates(in_frame)
+    left_ys, left_xs, right_ys, right_xs = get_points_remove_noise(in_frame)
 
     left_line_coeffs = np.polyfit(left_xs, left_ys, deg=1)
     right_line_coeffs = np.polyfit(right_xs, right_ys, deg=1)
@@ -93,9 +98,6 @@ def make_lines(in_frame):
 
     right_bottom_y = new_height
     right_bottom_x = int((right_bottom_y - right_line_coeffs[1]) / right_line_coeffs[0])
-
-
-
 
     min_x = -10 ** 15
     max_x = 10 ** 8
@@ -120,7 +122,7 @@ def make_lines(in_frame):
 
 
 SCALE_PERCENT = 25
-THRESHOLD_VALUE = 170 # 127
+THRESHOLD_VALUE = 190 # 127
 WHITE_COLOR = (255, 255, 255)
 
 cam = cv2.VideoCapture('Lane Detection Test Video-01.mp4')
@@ -183,7 +185,7 @@ while True:
     final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
     #cv2.imshow('final1', final_lines_left)
 
-    left_ys1, left_xs1, right_ys1, right_xs1 = find_street_markings_coordinates(final_lines_left)
+    left_ys1, left_xs1, right_ys1, right_xs1 = get_points_remove_noise(final_lines_left)
     left_line_coords = left_ys1, left_xs1, right_ys1, right_xs1
     #---------------------------------------------dreapta
 
@@ -194,7 +196,7 @@ while True:
     matrix2 = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
     final_lines_right = cv2.warpPerspective(final2, matrix2, (new_width, new_height))
     #cv2.imshow('final2', final_lines_right)
-    left_ys2, left_xs2, right_ys2, right_xs2 = find_street_markings_coordinates(final_lines_left)
+    left_ys2, left_xs2, right_ys2, right_xs2 = get_points_remove_noise(final_lines_left)
     right_line_coords = left_ys2, left_xs2, right_ys2, right_xs2
 
 
