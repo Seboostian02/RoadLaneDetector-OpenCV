@@ -68,10 +68,10 @@ def get_points_remove_noise(in_binary_frame, percentage_to_remove = 5):
     left_half = image_gray[:, : binary_frame_width // 2]
     right_half = image_gray[:, binary_frame_width // 2:]
 
-    white_pixels_left = np.argwhere(left_half > 100)
+    white_pixels_left = np.argwhere(left_half > 130)
     in_left_ys, in_left_xs = white_pixels_left[:, 0], white_pixels_left[:, 1]
 
-    white_pixels_right = np.argwhere(right_half > 100)
+    white_pixels_right = np.argwhere(right_half > 80)
     in_right_ys, in_right_xs = white_pixels_right[:, 0], white_pixels_right[:, 1]
 
     return in_left_ys, in_left_xs, in_right_ys, in_right_xs
@@ -138,6 +138,7 @@ def make_lines(in_frame):
         # Verificare puncte proaste
         if abs(left_top_x) > 1e8:
             left_top_x = left_top_x if left_top_x != 0 else left_top_x
+            #daca este diferit de 0 primeste valoarea anterioara
         if abs(left_bottom_x) > 1e8:
             left_bottom_x = left_bottom_x if left_bottom_x != 0 else left_bottom_x
         if abs(right_top_x) > 1e8:
