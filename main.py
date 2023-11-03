@@ -205,62 +205,8 @@ while True:
     result_frame = result_frame + frame_linii_color * 255
     result_frame = cv2.resize(result_frame, (500, 250))
 
-
-    # cv2.bitwise_and(image_gray, image_gray, mask=mask)
-
-
-    # result_frame = original.copy()
-    # for coord in left_line_coords:
-    #       result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
-    # for coord in right_line_coords:
-    #      result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
-    #
-    # cv2.imshow("Lane Detection", result_frame)
-    # Display the final frame with colored lane lines
     cv2.imshow("Lane Detection with Colored Lines", result_frame)
 
-    # ----------------- FINAL
-    #
-    # screen_bounds = np.array([(new_width, 0), (0, 0), (0, new_height), (new_width, new_height)], dtype=np.float32)
-    # # frame gol
-    # final_frame = np.zeros((new_height, new_width), dtype=np.uint8)
-    #
-    # # desenare linii stanga
-    # cv2.line(final_frame, left_bottom, left_top, (255, 0, 0), 3)
-    #
-    # # revenire harta
-    # magic_matrix_left = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    # top_down_frame_left = cv2.warpPerspective(final_frame, magic_matrix_left, (new_width, new_height))
-    #
-    # # d. warp top down to original
-    # top_down_frame_left = cv2.warpPerspective(top_down_frame_left, magic_matrix_left, (new_width, new_height))
-    #
-    # left_line_coords = np.argwhere(top_down_frame_left == [255, 0, 0])
-    #
-    # # pentru stanga
-    # final_frame = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    #
-    # cv2.line(final_frame, right_bottom, right_top, (255, 0, 0), 3)
-    #
-    # magic_matrix_right = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    #
-    # top_down_frame_right = cv2.warpPerspective(final_frame, magic_matrix_right, (new_width, new_height))
-    # top_down_frame_right = cv2.warpPerspective(top_down_frame_right, magic_matrix_right, (new_width, new_height))
-    #
-    # right_line_coords = np.argwhere(top_down_frame_right == [255, 0, 0])
-    #
-    # # g. Create a copy of the original frame and color the lines
-    # result_frame = frame.copy()
-    #
-    # # Color left line in red and right line in green
-    # for coord in left_line_coords:
-    #      result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
-    # for coord in right_line_coords:
-    #     result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
-    #
-    # #Display the final frame with colored lines
-    # cv2.imshow("Lane Detection", result_frame)
-    print
     cv2.imshow('Original', original)
     cv2.imshow('Grayscale', image_gray)
     cv2.imshow('Trapez', mask)
