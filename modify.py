@@ -246,7 +246,7 @@ while True:
     _, binary_frame = cv2.threshold(stretched_frame, THRESHOLD_VALUE, 255, cv2.THRESH_BINARY)
     # imaginea, valoarea, absolute white, tip de threshold
 
-    # ----------------------------- coordonate si delete la noise
+    # -----------------------------  Ultimele afisari
     new_original = frame.copy()
     processed_frame, left_top, left_bottom, right_top, right_bottom = find_and_draw_lane_edges(binary_frame)
 
@@ -258,60 +258,23 @@ while True:
 
     matrix = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
     final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
-    cv2.imshow('linii stanga', final_lines_left)
+    #cv2.imshow('linii stanga', final_lines_left)
 
     final2 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
     cv2.line(final2, right_top, right_bottom, (50, 255, 50), 10)
     matrix2 = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
 
     final_lines_right = cv2.warpPerspective(final2, matrix2, (new_width, new_height))
-    cv2.imshow('linii dreapta', final_lines_right)
-    # AICI DA EROARE
-    #final_frame = transform_and_draw_lines(new_original, trapez_bounds)
+    #cv2.imshow('linii dreapta', final_lines_right)
 
-    # Display the processed frame
+    result_frame = original.copy()
+    frame_linii_color = final_lines_left + final_lines_right
 
-    # ------------------ FINAL?
+    cv2.imshow('combinat', frame_linii_color)
+    result_frame = result_frame + frame_linii_color * 255
+    result_frame = cv2.resize(result_frame, (500, 250))
 
-    # Nu mai merge sa afisez ca in main liniile pe 2 frame-uri diferite
-
-    # final1 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    # cv2.line(final1, left_top, left_bottom, (255, 0, 0), 3)
-    #
-    # trapez_bounds = np.float32(trapez_bounds)
-    # screen_bounds = np.float32(screen_bounds)
-    #
-    # matrix = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    # final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
-    # cv2.imshow('final1', final_lines_left)
-    #
-    # left_xs1, left_ys1, right_xs1, right_ys1 = find_street_markings_coordinates(final_lines_left)
-    # left_line_coords = left_ys1, left_xs1, right_ys1, right_xs1
-    # #---------------------------------------------dreapta
-    # left_xs, left_ys, right_xs, right_ys = find_street_markings_coordinates(binary_frame)
-    # final2 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    # #
-    #
-    # cv2.line(final2, right_top, right_bottom, (50, 250, 50), 3)
-    # #
-    # matrix2 = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    # final_lines_right = cv2.warpPerspective(final2, matrix2, (new_width, new_height))
-    # cv2.imshow('final2', final_lines_right)
-    #
-    # left_xs2, left_ys2, right_xs2, right_ys2 = find_street_markings_coordinates(final_lines_left)
-    # right_line_coords = left_ys2, left_xs2, right_ys2, right_xs2
-    #
-    # result_frame = original.copy()
-    # for coord in left_line_coords:
-    #       result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
-    # for coord in right_line_coords:
-    #      result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
-    #
-    # cv2.imshow("Lane Detection", result_frame)
-
-
-    # ----------------- PANA AICI
-
+    cv2.imshow("Lane Detection with Colored Lines", result_frame)
 
 
     # print

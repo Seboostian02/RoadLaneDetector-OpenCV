@@ -81,25 +81,48 @@ def make_lines(in_frame):
 
     left_ys, left_xs, right_ys, right_xs = get_points_remove_noise(in_frame)
 
-    left_line_coeffs = np.polyfit(left_xs, left_ys, deg=1)
-    right_line_coeffs = np.polyfit(right_xs, right_ys, deg=1)
+    left_pixels = np.column_stack((left_xs, left_ys))
+    right_pixels = np.column_stack((right_xs, right_ys))
 
-    #left_line_coeffs = np.polynomial.polynomial.polyfit(left_ys, left_xs, deg=1)
-    #right_line_coeffs = np.polynomial.polynomial.polyfit(right_ys, right_xs, deg=1)
+    # Pozitionare linii
+    if len(left_pixels) > 0:
+        left_line = np.polynomial.polynomial.polyfit(left_pixels[:, 1], left_pixels[:, 0], 1)
+
+        left_top_y = 0
+        left_bottom_y = frame.shape[0]  # height
+
+        left_top_x = int((0 - left_line[0]) / left_line[1])
+        left_bottom_x = int((frame.shape[0] - left_line[0]) / left_line[1])
+
+    if len(right_pixels) > 0:
+        right_line = np.polynomial.polynomial.polyfit(right_pixels[:, 1], right_pixels[:, 0], 1)
+
+        right_top_y = 0
+        right_bottom_y = frame.shape[0]  # height
+
+        right_top_x = int((0 - right_line[0]) / right_line[1])
+        right_bottom_x = int((frame.shape[0] + right_line[0]) / right_line[1])
+
     #
-    left_top_y = 0
-    left_top_x = int((left_top_y - left_line_coeffs[1]) / left_line_coeffs[0])
+    # left_line_coeffs = np.polyfit(left_xs, left_ys, deg=1)
+    # right_line_coeffs = np.polyfit(right_xs, right_ys, deg=1)
+    #
+    # #left_line_coeffs = np.polynomial.polynomial.polyfit(left_ys, left_xs, deg=1)
+    # #right_line_coeffs = np.polynomial.polynomial.polyfit(right_ys, right_xs, deg=1)
+    # #
+    # left_top_y = 0
+    # left_top_x = int((left_top_y - left_line_coeffs[1]) / left_line_coeffs[0])
+    #
+    # left_bottom_y = frame.shape[0]
+    # left_bottom_x = int((left_bottom_y - left_line_coeffs[1]) / left_line_coeffs[0])
+    #
+    # right_top_y = 0
+    # right_top_x = int((right_top_y - right_line_coeffs[1]) / right_line_coeffs[0])
+    #
+    # right_bottom_y = frame.shape[0]
+    # right_bottom_x = int((right_bottom_y + right_line_coeffs[1]) / right_line_coeffs[0])
 
-    left_bottom_y = new_height
-    left_bottom_x = int((left_bottom_y - left_line_coeffs[1]) / left_line_coeffs[0])
-
-    right_top_y = 0
-    right_top_x = int((right_top_y - right_line_coeffs[1]) / right_line_coeffs[0])
-
-    right_bottom_y = new_height
-    right_bottom_x = int((right_bottom_y - right_line_coeffs[1]) / right_line_coeffs[0])
-
-    min_x = -10 ** 15
+    min_x = -10 ** 8
     max_x = 10 ** 8
 
     # logica eliminare valori in interval
@@ -111,6 +134,16 @@ def make_lines(in_frame):
         right_top_x = 0
     if not (min_x < right_bottom_x < max_x):
         right_bottom_x = 0
+
+        # Verificare puncte proaste
+        if abs(left_top_x) > 1e8:
+            left_top_x = left_top_x if left_top_x != 0 else left_top_x
+        if abs(left_bottom_x) > 1e8:
+            left_bottom_x = left_bottom_x if left_bottom_x != 0 else left_bottom_x
+        if abs(right_top_x) > 1e8:
+            right_top_x = right_top_x if right_top_x != 0 else right_top_x
+        if abs(right_bottom_x) > 1e8:
+            right_bottom_x = right_bottom_x if right_bottom_x != 0 else right_bottom_x
 
     left_top = left_top_y, left_top_x
     left_bottom = left_bottom_y, left_bottom_x

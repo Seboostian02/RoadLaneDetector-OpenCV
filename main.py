@@ -94,9 +94,6 @@ def make_lines(in_frame):
     right_bottom_y = new_height
     right_bottom_x = int((right_bottom_y - right_line_coeffs[1]) / right_line_coeffs[0])
 
-
-
-
     min_x = -10 ** 15
     max_x = 10 ** 8
 
