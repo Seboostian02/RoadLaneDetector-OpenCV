@@ -77,7 +77,10 @@ def get_points_remove_noise(in_binary_frame, percentage_to_remove = 5):
     return in_left_ys, in_left_xs, in_right_ys, in_right_xs
 
 
-def make_lines(left_ys, left_xs, right_ys, right_xs):
+def make_lines(in_frame):
+
+    left_ys, left_xs, right_ys, right_xs = get_points_remove_noise(in_frame)
+
     left_line_coeffs = np.polyfit(left_xs, left_ys, deg=1)
     right_line_coeffs = np.polyfit(right_xs, right_ys, deg=1)
 
@@ -158,10 +161,8 @@ while True:
     _, binary_frame = cv2.threshold(stretched_frame, THRESHOLD_VALUE, 255, cv2.THRESH_BINARY)
     # imaginea, valoarea, absolute white, tip de threshold
 
-    # ----------------------------- coordonate si delete la noise
-    left_ys, left_xs, right_ys, right_xs = get_points_remove_noise(binary_frame)
     # # --------------------- LINIIIIIIIIII
-    left_top, left_bottom, right_top, right_bottom = make_lines(left_ys, left_xs, right_ys, right_xs)
+    left_top, left_bottom, right_top, right_bottom = make_lines(binary_frame)
 
     cv2.line(binary_frame, left_top, left_bottom,
              (200, 0, 0), 5)  # Linie stânga
