@@ -8,8 +8,8 @@ def limits(width_in, height_in):
     :param height_in:
     :return: arr of limits  [upper_right, upper_left, lower_left, lower_right]
     """
-    upper_left = (int(width_in * 0.40), int(height_in * 0.77))
-    upper_right = (int(width_in * 0.60), int(height_in * 0.77))
+    upper_left = (int(width_in * 0.40), int(height_in * 0.78))
+    upper_right = (int(width_in * 0.60), int(height_in * 0.78))
     lower_left = (int(width_in * 0.1), int(height_in * 1))
     lower_right = (int(width_in * 0.9), int(height_in * 1))
 
@@ -18,7 +18,7 @@ def limits(width_in, height_in):
     return np.array(arr_of_limits, dtype=np.int32)
 
 
-def stretch(in_trapez_bounds, in_width, in_height):
+def stretch(in_trapez_bounds):
     """
     Stretch the frame
     :param in_trapez_bounds: margini trapez
@@ -27,16 +27,19 @@ def stretch(in_trapez_bounds, in_width, in_height):
     :return: screen_bounds and stretched frame
     """
     in_trapez_bounds = np.float32(in_trapez_bounds)
-    out_screen_bounds = np.array([(in_width, 0), (0, 0), (0, in_height), (in_width, in_height)], dtype=np.float32)
+    out_screen_bounds = np.array([(width, 0), (0, 0), (0, height), (width, height)], dtype=np.float32)
 
     perspective_matrix = cv2.getPerspectiveTransform(in_trapez_bounds, out_screen_bounds)
 
-    return out_screen_bounds, cv2.warpPerspective(masked_frame, perspective_matrix, (in_width, in_height))
+    return out_screen_bounds, cv2.warpPerspective(masked_frame, perspective_matrix, (width, height))
 
 
 def sobel(in_stretched_frame):
     sobel_horizontal = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
+    # kernelul pentru detectarea marginilor orizontale în imagine folosind filtrul Sobel.
     sobel_vertical = np.transpose(sobel_horizontal)
+    # aceeasi chestie pentru orizontal
+
 
     # resized = resized.astype(np.float32)
     stretched_frame_float32 = np.float32(in_stretched_frame)
@@ -49,24 +52,24 @@ def sobel(in_stretched_frame):
     return cv2.convertScaleAbs(sobel_filter)
 
 
-def get_points_remove_noise(in_binary_frame, percentage_to_remove = 5):
+def get_points_remove_noise(in_frame, percentage_to_remove = 5):
     """
     Optimizeaza frame-ul (sterge by default 5% stanga-dreapta)
     :param in_binary_frame: binary frame
     :return: puncte care urmeaza marcajele de pe strada
     left_ys, left_xs, right_ys, right_xs
     """
-    binary_frame_copy = in_binary_frame.copy()
+    frame_copy = in_frame.copy()
 
-    binary_frame_width = in_binary_frame.shape[1]
+    frame_width = in_frame.shape[1]
 
-    columns_to_remove = int(binary_frame_width * (percentage_to_remove / 100))
+    columns_to_remove = int(frame_width * (percentage_to_remove / 100))
 
-    binary_frame_copy[:, :columns_to_remove] = 0  # stergem primele coloane
-    binary_frame_copy[:, -columns_to_remove:] = 0  # stergem ultimele coloeane
+    frame_copy[:, :columns_to_remove] = 0  # stergem primele coloane
+    frame_copy[:, -columns_to_remove:] = 0  # stergem ultimele coloeane
 
-    left_half = image_gray[:, : binary_frame_width // 2]
-    right_half = image_gray[:, binary_frame_width // 2:]
+    left_half = image_gray[:, : frame_width // 2]
+    right_half = image_gray[:, frame_width // 2:]
 
     white_pixels_left = np.argwhere(left_half > 130)
     in_left_ys, in_left_xs = white_pixels_left[:, 0], white_pixels_left[:, 1]
@@ -84,18 +87,23 @@ def make_lines(in_frame):
     left_pixels = np.column_stack((left_xs, left_ys))
     right_pixels = np.column_stack((right_xs, right_ys))
 
-    # Pozitionare linii
+    # Calculare regresie liniara
     if len(left_pixels) > 0:
-        left_line = np.polynomial.polynomial.polyfit(left_pixels[:, 1], left_pixels[:, 0], 1)
+        left_line = np.polynomial.polynomial.polyfit(
+            left_pixels[:, 1], left_pixels[:, 0], deg=1)
 
         left_top_y = 0
         left_bottom_y = frame.shape[0]  # height
 
+        # rezolvare ecuatie y = m * x + b
+        # left_line[1] = rata de schimbare a lui y fata de x (m)
+        # left_line[0] = linia care traverseaza axa y(y = 0)
         left_top_x = int((0 - left_line[0]) / left_line[1])
         left_bottom_x = int((frame.shape[0] - left_line[0]) / left_line[1])
 
     if len(right_pixels) > 0:
-        right_line = np.polynomial.polynomial.polyfit(right_pixels[:, 1], right_pixels[:, 0], 1)
+        right_line = np.polynomial.polynomial.polyfit(
+            right_pixels[:, 1], right_pixels[:, 0], deg=1)
 
         right_top_y = 0
         right_bottom_y = frame.shape[0]  # height
@@ -103,29 +111,10 @@ def make_lines(in_frame):
         right_top_x = int((0 - right_line[0]) / right_line[1])
         right_bottom_x = int((frame.shape[0] + right_line[0]) / right_line[1])
 
-    #
-    # left_line_coeffs = np.polyfit(left_xs, left_ys, deg=1)
-    # right_line_coeffs = np.polyfit(right_xs, right_ys, deg=1)
-    #
-    # #left_line_coeffs = np.polynomial.polynomial.polyfit(left_ys, left_xs, deg=1)
-    # #right_line_coeffs = np.polynomial.polynomial.polyfit(right_ys, right_xs, deg=1)
-    # #
-    # left_top_y = 0
-    # left_top_x = int((left_top_y - left_line_coeffs[1]) / left_line_coeffs[0])
-    #
-    # left_bottom_y = frame.shape[0]
-    # left_bottom_x = int((left_bottom_y - left_line_coeffs[1]) / left_line_coeffs[0])
-    #
-    # right_top_y = 0
-    # right_top_x = int((right_top_y - right_line_coeffs[1]) / right_line_coeffs[0])
-    #
-    # right_bottom_y = frame.shape[0]
-    # right_bottom_x = int((right_bottom_y + right_line_coeffs[1]) / right_line_coeffs[0])
-
     min_x = -10 ** 8
     max_x = 10 ** 8
 
-    # logica eliminare valori in interval
+    # logica eliminare valori outliner
     if not (min_x < left_top_x < max_x):
         left_top_x = 0
     if not (min_x < left_bottom_x < max_x):
@@ -135,16 +124,16 @@ def make_lines(in_frame):
     if not (min_x < right_bottom_x < max_x):
         right_bottom_x = 0
 
-        # Verificare puncte proaste
-        if abs(left_top_x) > 1e8:
-            left_top_x = left_top_x if left_top_x != 0 else left_top_x
-            #daca este diferit de 0 primeste valoarea anterioara
-        if abs(left_bottom_x) > 1e8:
-            left_bottom_x = left_bottom_x if left_bottom_x != 0 else left_bottom_x
-        if abs(right_top_x) > 1e8:
-            right_top_x = right_top_x if right_top_x != 0 else right_top_x
-        if abs(right_bottom_x) > 1e8:
-            right_bottom_x = right_bottom_x if right_bottom_x != 0 else right_bottom_x
+    # Verificare puncte proaste
+    if abs(left_top_x) > 1e8:
+        left_top_x = left_top_x if left_top_x != 0 else left_top_x
+        #daca este diferit de 0 primeste valoarea anterioara
+    if abs(left_bottom_x) > 1e8:
+        left_bottom_x = left_bottom_x if left_bottom_x != 0 else left_bottom_x
+    if abs(right_top_x) > 1e8:
+        right_top_x = right_top_x if right_top_x != 0 else right_top_x
+    if abs(right_bottom_x) > 1e8:
+        right_bottom_x = right_bottom_x if right_bottom_x != 0 else right_bottom_x
 
     left_top = left_top_y, left_top_x
     left_bottom = left_bottom_y, left_bottom_x
@@ -153,6 +142,8 @@ def make_lines(in_frame):
 
 
     return left_top, left_bottom, right_top, right_bottom
+
+
 
 
 SCALE_PERCENT = 25
@@ -185,7 +176,7 @@ while True:
     masked_frame = cv2.bitwise_and(image_gray, image_gray, mask=mask)
     # masked_frame = image_gray * mask * 255
     # --------------------------------- Stretch
-    screen_bounds, stretched_frame = stretch(trapez_bounds, new_width, new_height)
+    screen_bounds, stretched_frame = stretch(trapez_bounds)
     # --------------------------------- BLUR
     blurred_frame = cv2.blur(stretched_frame, ksize=(5, 5))
     # ----------------------------- SOBEL
@@ -198,38 +189,39 @@ while True:
     # # --------------------- LINIIIIIIIIII
     left_top, left_bottom, right_top, right_bottom = make_lines(binary_frame)
 
+    line_thickness = 5
     cv2.line(binary_frame, left_top, left_bottom,
-             (200, 0, 0), 5)  # Linie stânga
+             (200, 0, 0), line_thickness)  # Linie stânga
 
     cv2.line(binary_frame, right_top, right_bottom,
-             (100, 0, 0), 5)  # Linie dreapta
-    # cv2.line(binary_frame, (new_width // 2, 0), (new_width // 2, new_height), (255, 0, 0), 1)
+             (100, 0, 0), line_thickness)  # Linie dreapta
 
-    # original_bounds = np.array([(new_width, 0), (0, 0), (0, new_height), (new_width, new_height)], dtype=np.float32)
+    middle_x = width // 2
+    cv2.line(binary_frame, (middle_x, 0), (middle_x, height),
+             (255, 0, 0), 1) # Linie mijloc
 
-    # ------------------ FINAL?
+    # ------------------ FINAL
 
-    final1 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
+    final1 = np.zeros((height, width, 3), dtype=np.uint8)
     cv2.line(final1, left_top, left_bottom, (255, 50, 50), 10)
 
     trapez_bounds = np.float32(trapez_bounds)
     screen_bounds = np.float32(screen_bounds)
 
     matrix = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    final_lines_left = cv2.warpPerspective(final1, matrix, (new_width, new_height))
-    #cv2.imshow('final1', final_lines_left)
+    final_lines_left = cv2.warpPerspective(final1, matrix, (width, height))
 
     left_ys1, left_xs1, right_ys1, right_xs1 = get_points_remove_noise(final_lines_left)
     left_line_coords = left_ys1, left_xs1, right_ys1, right_xs1
-    #---------------------------------------------dreapta
 
+    # ---------------------------------------------dreapta
     final2 = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    #
+
     cv2.line(final2, right_top, right_bottom, (50, 250, 50), 10)
-    #
+
     matrix2 = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    final_lines_right = cv2.warpPerspective(final2, matrix2, (new_width, new_height))
-    #cv2.imshow('final2', final_lines_right)
+    final_lines_right = cv2.warpPerspective(final2, matrix2, (width, height))
+
     left_ys2, left_xs2, right_ys2, right_xs2 = get_points_remove_noise(final_lines_left)
     right_line_coords = left_ys2, left_xs2, right_ys2, right_xs2
 
@@ -237,66 +229,25 @@ while True:
     result_frame = original.copy()
     frame_linii_color = final_lines_left + final_lines_right
 
-    cv2.imshow('combinat', frame_linii_color)
-    result_frame = result_frame + frame_linii_color * 255
+    cv2.imshow('Combinat', frame_linii_color)
+
+    # Creare masca linii
+    non_black_pixels = np.any(frame_linii_color != [0, 0, 0], axis=-1)
+    mask_lines = np.stack([non_black_pixels] , axis=-1)
+
+    masked_lines_frame = np.where(mask_lines, frame_linii_color, result_frame)
+    #result_frame = result_frame + frame_linii_color * 255
+    alpha = 1  # Transparenta linii
+    beta = 1.0 - alpha
+
+    # Unim frame-urile
+    result_frame = cv2.addWeighted(result_frame, beta, masked_lines_frame, alpha, 0)
     result_frame = cv2.resize(result_frame, (500, 250))
 
 
-    # cv2.bitwise_and(image_gray, image_gray, mask=mask)
-
-
-    # result_frame = original.copy()
-    # for coord in left_line_coords:
-    #       result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
-    # for coord in right_line_coords:
-    #      result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
-    #
-    # cv2.imshow("Lane Detection", result_frame)
-    # Display the final frame with colored lane lines
     cv2.imshow("Lane Detection with Colored Lines", result_frame)
 
-    # ----------------- FINAL
-    #
-    # screen_bounds = np.array([(new_width, 0), (0, 0), (0, new_height), (new_width, new_height)], dtype=np.float32)
-    # # frame gol
-    # final_frame = np.zeros((new_height, new_width), dtype=np.uint8)
-    #
-    # # desenare linii stanga
-    # cv2.line(final_frame, left_bottom, left_top, (255, 0, 0), 3)
-    #
-    # # revenire harta
-    # magic_matrix_left = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    # top_down_frame_left = cv2.warpPerspective(final_frame, magic_matrix_left, (new_width, new_height))
-    #
-    # # d. warp top down to original
-    # top_down_frame_left = cv2.warpPerspective(top_down_frame_left, magic_matrix_left, (new_width, new_height))
-    #
-    # left_line_coords = np.argwhere(top_down_frame_left == [255, 0, 0])
-    #
-    # # pentru stanga
-    # final_frame = np.zeros((new_height, new_width, 3), dtype=np.uint8)
-    #
-    # cv2.line(final_frame, right_bottom, right_top, (255, 0, 0), 3)
-    #
-    # magic_matrix_right = cv2.getPerspectiveTransform(screen_bounds, trapez_bounds)
-    #
-    # top_down_frame_right = cv2.warpPerspective(final_frame, magic_matrix_right, (new_width, new_height))
-    # top_down_frame_right = cv2.warpPerspective(top_down_frame_right, magic_matrix_right, (new_width, new_height))
-    #
-    # right_line_coords = np.argwhere(top_down_frame_right == [255, 0, 0])
-    #
-    # # g. Create a copy of the original frame and color the lines
-    # result_frame = frame.copy()
-    #
-    # # Color left line in red and right line in green
-    # for coord in left_line_coords:
-    #      result_frame[coord[0], coord[1]] = [0, 0, 255]  # Red
-    # for coord in right_line_coords:
-    #     result_frame[coord[0], coord[1]] = [0, 255, 0]  # Green
-    #
-    # #Display the final frame with colored lines
-    # cv2.imshow("Lane Detection", result_frame)
-    print
+
     cv2.imshow('Original', original)
     cv2.imshow('Grayscale', image_gray)
     cv2.imshow('Trapez', mask)
