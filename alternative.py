@@ -18,10 +18,10 @@
 #
 #     height, width = frame.shape[:2]
 #
-#     bottom_left = (int(width * 0), int(height * 1))
-#     top_left = (int(width * 0.45), int(height * 0.77))
-#     top_right = (width // 2 + 50, height // 2 + 50)
-#     bottom_right = (int(width * 1), int(height * 1))
+#     bottom_left = (int(width * 0.1), int(height * 1))
+#     top_left = (int(width * 0.48), int(height * 0.77))
+#     top_right = ((width // 2 + 50) , (height // 2 + 50) )
+#     bottom_right = (int(width * 0.9), int(height * 1))
 #
 #     vertices = np.array([[bottom_left, top_left, top_right, bottom_right]], np.int32)
 #     mask = np.zeros_like(edges)
