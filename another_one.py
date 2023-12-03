@@ -257,6 +257,7 @@ while True:
     cv2.imshow('Sobel', sobel_filter_uint8)
     cv2.imshow('Binary Image', binary_frame)
 
+
     # close
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
