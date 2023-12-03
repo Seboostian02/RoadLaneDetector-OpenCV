@@ -203,7 +203,7 @@ while True:
     # ------------------ FINAL
 
     final1 = np.zeros((height, width, 3), dtype=np.uint8)
-    cv2.line(final1, left_top, left_bottom, (255, 50, 50), 10)
+    cv2.line(final1, left_top, left_bottom, (250, 0, 100), 10)
 
     trapez_bounds = np.float32(trapez_bounds)
     screen_bounds = np.float32(screen_bounds)
